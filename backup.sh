@@ -46,10 +46,14 @@ send_notification() {
 
 log "Backup process started."
 
+# Accumulate notifications
+NOTIFICATIONS=()
+
 # Loop through each directory and process it
 for DIR in "${DIRECTORIES[@]}"; do
     # Skip directories that start with a `#`
     if [[ "$DIR" =~ ^# ]]; then
+        log "Skipping directory: ${DIR#"#"} (commented out)"
         continue
     fi
 
@@ -61,8 +65,9 @@ for DIR in "${DIRECTORIES[@]}"; do
         log "Stopping containers in $DIR..."
         sudo docker compose -f "$DIR/docker-compose.yml" down | tee -a "$LOG_FILE"
         if [ $? -ne 0 ]; then
-            log "Failed to stop containers in $DIR. Skipping backup for this directory."
-            send_notification "Backup Failed: $CONTAINER_NAME" "Failed to stop containers in $DIR. Skipping backup." 5
+            MESSAGE="Failed to stop containers in $DIR. Skipping backup."
+            log "$MESSAGE"
+            NOTIFICATIONS+=("Backup Failed: $CONTAINER_NAME - $MESSAGE")
             continue
         fi
 
@@ -72,32 +77,40 @@ for DIR in "${DIRECTORIES[@]}"; do
 
         # Create a compressed backup with preserved permissions
         log "Creating backup for $DIR..."
-        sudo tar --preserve-permissions -czvf "$BACKUP_PATH/$ARCHIVE_NAME" -C "$(dirname "$DIR")" "$(basename "$DIR")" | tee -a "$LOG_FILE"
+        sudo tar --preserve-permissions -czf "$BACKUP_PATH/$ARCHIVE_NAME" -C "$(dirname "$DIR")" "$(basename "$DIR")"
         if [ $? -ne 0 ]; then
-            log "Failed to create backup for $DIR. Skipping..."
-            send_notification "Backup Failed: $CONTAINER_NAME" "Failed to create backup for $DIR. Skipping." 5
+            MESSAGE="Failed to create backup for $DIR. Skipping."
+            log "$MESSAGE"
+            NOTIFICATIONS+=("Backup Failed: $CONTAINER_NAME - $MESSAGE")
             continue
         fi
 
         # Get the size of the backup file
         BACKUP_SIZE=$(sudo du -sh "$BACKUP_PATH/$ARCHIVE_NAME" | cut -f1)
         log "Backup of $DIR completed: $BACKUP_PATH/$ARCHIVE_NAME (Size: $BACKUP_SIZE)"
-        send_notification "Backup Successful: $CONTAINER_NAME" "Backup of $DIR completed: $BACKUP_PATH/$ARCHIVE_NAME (Size: $BACKUP_SIZE)" 5
+        NOTIFICATIONS+=("Backup Successful: $CONTAINER_NAME - $BACKUP_PATH/$ARCHIVE_NAME (Size: $BACKUP_SIZE)")
 
         # Restart the containers
         log "Restarting containers in $DIR..."
         sudo docker compose -f "$DIR/docker-compose.yml" up -d | tee -a "$LOG_FILE"
         if [ $? -ne 0 ]; then
-            log "Failed to restart containers in $DIR. Please check manually."
-            send_notification "Backup Warning: $CONTAINER_NAME" "Backup successful for $DIR, but restarting containers failed. Please check manually." 4
+            MESSAGE="Backup successful for $DIR, but restarting containers failed. Please check manually."
+            log "$MESSAGE"
+            NOTIFICATIONS+=("Backup Warning: $CONTAINER_NAME - $MESSAGE")
         else
             log "Containers in $DIR restarted successfully."
         fi
     else
-        log "Directory $DIR does not exist or does not contain a docker-compose.yml file. Skipping..."
-        send_notification "Backup Skipped" "Directory $DIR does not exist or is missing docker-compose.yml. Skipping." 3
+        MESSAGE="Directory $DIR does not exist or does not contain a docker-compose.yml file. Skipping."
+        log "$MESSAGE"
+        NOTIFICATIONS+=("Backup Skipped - $MESSAGE")
     fi
 done
 
+# Send all notifications in a single Gotify message (if enabled)
+if [ "$GOTIFY_MESSAGING" = true ]; then
+    SUMMARY=$(printf '%s\n' "${NOTIFICATIONS[@]}")
+    send_notification "Backup Process Completed" "$SUMMARY" 6
+fi
+
 log "Backup process completed."
-send_notification "Backup Process Completed" "All directories have been processed. Check log for details." 6
