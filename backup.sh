@@ -17,6 +17,9 @@ DIRECTORIES=(
    #"/path/to/container3"
 )
 
+# Maximum number of backups to keep
+MAX_BACKUPS=5
+
 # Ensure backup path and log file exist
 sudo mkdir -p "$BACKUP_PATH"
 sudo touch "$LOG_FILE"
@@ -41,6 +44,19 @@ send_notification() {
         if [ "$RESPONSE" -ne 200 ]; then
             log "Failed to send Gotify notification. HTTP response code: $RESPONSE"
         fi
+    fi
+}
+
+rotate_backups() {
+    local backups=("$(ls -t $BACKUP_PATH/*.tar.gz 2>/dev/null)")
+    local count=${#backups[@]}
+
+    if [ "$count" -gt "$MAX_BACKUPS" ]; then
+        local remove_count=$((count - MAX_BACKUPS))
+        for ((i=0; i<remove_count; i++)); do
+            log "Removing old backup: ${backups[$((count - i - 1))]}"
+            sudo rm -f "${backups[$((count - i - 1))]}"
+        done
     fi
 }
 
@@ -105,6 +121,9 @@ for DIR in "${DIRECTORIES[@]}"; do
         log "$MESSAGE"
         NOTIFICATIONS+=("Backup Skipped - $MESSAGE")
     fi
+
+    # Rotate backups after each directory's backup is completed
+    rotate_backups
 done
 
 # Send all notifications in a single Gotify message (if enabled)
