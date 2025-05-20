@@ -1,27 +1,14 @@
 #!/bin/bash
 
-# Backup destination path
-BACKUP_PATH="/path/to/backup"
-LOG_FILE="/path/to/backup/backup.log"
+# Load configuration variables
+source "$(dirname "$0")/backup.conf"
 
-# Gotify API details
-GOTIFY_URL="https://gotify.example.com/message"  # Replace with your Gotify URL
-GOTIFY_TOKEN="your-gotify-token"                # Replace with your Gotify API token
-GOTIFY_MESSAGING=true  # Set to true to enable Gotify notifications, false to disable
+# Read directories from directories.txt, ignoring comments and empty lines
+mapfile -t DIRECTORIES < <(grep -vE '^[[:space:]]*#' "$(dirname "$0")/directories.txt" | grep -vE '^[[:space:]]*$')
 
-# Directories containing docker-compose.yml to backup
-# If you want to skip a directory just add a "#" before.
-DIRECTORIES=(
-    "/path/to/container1"
-    "/path/to/container2"
-   #"/path/to/container3"
-)
-
-# Maximum number of backups to keep
-MAX_BACKUPS=5
-
-# Ensure backup path and log file exist
+# Ensure backup path and log file directory exist
 sudo mkdir -p "$BACKUP_PATH"
+sudo mkdir -p "$(dirname "$LOG_FILE")"
 sudo touch "$LOG_FILE"
 
 # Function to log messages
@@ -48,14 +35,12 @@ send_notification() {
 }
 
 rotate_backups() {
-    local backups=("$(ls -t $BACKUP_PATH/*.tar.gz 2>/dev/null)")
+    local backups=($(ls -1t "$BACKUP_PATH"/*.tar.gz 2>/dev/null))
     local count=${#backups[@]}
-
-    if [ "$count" -gt "$MAX_BACKUPS" ]; then
-        local remove_count=$((count - MAX_BACKUPS))
-        for ((i=0; i<remove_count; i++)); do
-            log "Removing old backup: ${backups[$((count - i - 1))]}"
-            sudo rm -f "${backups[$((count - i - 1))]}"
+    if (( count > MAX_BACKUPS )); then
+        for ((i=MAX_BACKUPS; i<count; i++)); do
+            log "Removing old backup: ${backups[$i]}"
+            rm -f "${backups[$i]}"
         done
     fi
 }
