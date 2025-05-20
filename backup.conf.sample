@@ -1,0 +1,9 @@
+# Configuration for backup.sh
+BACKUP_PATH="/srv/backup"
+LOG_FILE="${BACKUP_PATH}/logs/backup.log"
+
+GOTIFY_URL="https://gotify.example.com/message"  # Replace with your Gotify URL
+GOTIFY_TOKEN="your-gotify-token"                 # Replace with your Gotify API token
+GOTIFY_MESSAGING=true  # Set to true to enable Gotify notifications, false to disable
+
+MAX_BACKUPS=5
