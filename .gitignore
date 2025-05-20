@@ -1,0 +1,14 @@
+# Ignore user-specific and sensitive configuration files
+backup.conf
+directories.txt
+# Ignore editor/project settings
+.vscode/
+# Ignore OS and editor temporary files
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+# Ignore log files
+*.log
+logs/
