@@ -3,7 +3,7 @@
 This small script automates the process of backing up Docker containers specified by their respective `docker-compose.yml` files. It stops the containers, creates backups of their directories, and then restarts the containers. 
 Optionally, it can send notifications through Gotify about the success or failure of the backup process.
 
-**Note:** The script assumes that all data of the container is contained in the respective root folder specified in the `DIRECTORIES` array. If additional data is stored elsewhere, you may need to adjust the script accordingly.
+**Note:** The script assumes that all data of the container is contained in the respective root folder specified in the `directories.txt` file. If additional data is stored elsewhere, you may need to adjust the script accordingly.
 
 ## Features
 - Backup multiple Docker containers defined by `docker-compose.yml`.
@@ -14,14 +14,36 @@ Optionally, it can send notifications through Gotify about the success or failur
 ## Setup and Configuration
 
 ### 1. **Configure Variables**
-Before running the script, you need to configure the following variables:
+Before running the script, copy the sample configuration files and edit them to your needs:
 
-- `BACKUP_PATH`: The directory where backups will be stored.
-- `LOG_FILE`: Path to the log file where all actions will be logged.
-- `DIRECTORIES`: Array of directories containing `docker-compose.yml` files for the containers you want to back up.
-- `GOTIFY_URL`: URL of your Gotify server.
-- `GOTIFY_TOKEN`: The Gotify API token for sending notifications.
-- `GOTIFY_MESSAGING`: Set this to `true` to enable Gotify notifications, or `false` to disable them.
+```bash
+cp backup.conf.sample backup.conf
+cp directories.txt.sample directories.txt
+```
+
+- `backup.conf`: Contains variables such as backup path, log file, Gotify settings, and max backups.
+- `directories.txt`: List of directories (one per line) containing `docker-compose.yml` files for the containers you want to back up. Comment out lines with `#` to skip them.
+
+#### Example `backup.conf`
+```
+# Backup destination path
+BACKUP_PATH="/srv/backup"
+LOG_FILE="${BACKUP_PATH}/logs/backup.log"
+
+# Gotify API details
+GOTIFY_URL="https://gotify.example.com/message"
+GOTIFY_TOKEN="your-gotify-token"
+GOTIFY_MESSAGING=true  # Set to false to disable Gotify notifications
+
+MAX_BACKUPS=5
+```
+
+#### Example `directories.txt`
+```
+/opt/containers/container1
+/opt/containers/container2
+#/opt/containers/container3
+```
 
 ### 2. **Install Dependencies**
 Ensure that you have the following installed:
@@ -33,43 +55,23 @@ Ensure that you have the following installed:
 Once you've configured the script, you can run it manually with the following command:
 
 ```bash
-sudo ./docker-backup.sh
+sudo ./backup.sh
 ```
 
 You can make the script executable with 
 ```
-chmod +x docker-backup.sh
+chmod +x backup.sh
 ```
 
-You can add it to cron with ```crontab -e``` or ```sudo crontab -e``` (if your directories need root access) adding the line 
+You can add it to cron with `crontab -e` or `sudo crontab -e` (if your directories need root access) adding the line 
 
 ```
-0 1 * * * /your/path/to/script/backup.sh
+0 1 * * * /opt/containers/docker_backup_script/backup.sh
 ```
 
 ### 4. Notification Configuration
 If GOTIFY_MESSAGING is set to true, notifications will be sent to your Gotify server after each container is backed up. These notifications will include details about the backup, including the size of the backup and whether the backup was successful.
 If GOTIFY_MESSAGING is set to false, no notifications will be sent, but the backup process will still proceed as normal.
-
-### 5. Example Configuration 
-```
-# Backup destination path
-BACKUP_PATH="/path/to/backup"
-LOG_FILE="/path/to/backup/backup.log"
-
-# Gotify API details
-GOTIFY_URL="https://gotify.example.com/message"
-GOTIFY_TOKEN="your-gotify-token"
-GOTIFY_MESSAGING=true  # Set to false to disable Gotify notifications
-
-# Directories containing docker-compose.yml to backup
-DIRECTORIES=(
-    "/path/to/container1"
-    "/path/to/container2"
-    "/path/to/container3"
-)
-...
-```
 
 ## License
 This script is licensed under the MIT License.
