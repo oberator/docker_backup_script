@@ -63,7 +63,7 @@ Ensure that you have the following installed:
 Once you've configured the script, you can run it manually with the following command:
 
 ```bash
-sudo ./backup.sh
+sudo bash backup.sh
 ```
 
 You can make the script executable with 
