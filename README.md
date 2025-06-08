@@ -13,7 +13,15 @@ Optionally, it can send notifications through Gotify about the success or failur
 
 ## Setup and Configuration
 
-### 1. **Configure Variables**
+### 1. **Clone the Repository**
+First, clone this repository to your docker host:
+
+```bash
+git clone https://github.com/oberator/docker_backup_script
+cd docker_backup_script
+```
+
+### 2. **Configure Variables**
 Before running the script, copy the sample configuration files and edit them to your needs:
 
 ```bash
@@ -45,13 +53,13 @@ MAX_BACKUPS=5
 #/opt/containers/container3
 ```
 
-### 2. **Install Dependencies**
+### 3. **Install Dependencies**
 Ensure that you have the following installed:
 - Docker
 - Docker Compose
 - curl (for Gotify notifications)
 
-### 3. **Running the Script**
+### 4. **Running the Script**
 Once you've configured the script, you can run it manually with the following command:
 
 ```bash
@@ -69,7 +77,7 @@ You can add it to cron with `crontab -e` or `sudo crontab -e` (if your directori
 0 1 * * * /opt/containers/docker_backup_script/backup.sh
 ```
 
-### 4. **Restoring a Backup**
+### 5. **Restoring a Backup**
 
 To restore a backup created by this script:
 
@@ -90,7 +98,7 @@ To restore a backup created by this script:
 
 **Note:** Adjust paths and filenames as needed. Make sure to review the extracted files before starting the container.
 
-### 5. Notification Configuration
+### 6. Notification Configuration
 If GOTIFY_MESSAGING is set to true, notifications will be sent to your Gotify server after each container is backed up. These notifications will include details about the backup, including the size of the backup and whether the backup was successful.
 If GOTIFY_MESSAGING is set to false, no notifications will be sent, but the backup process will still proceed as normal.
 
