@@ -69,7 +69,28 @@ You can add it to cron with `crontab -e` or `sudo crontab -e` (if your directori
 0 1 * * * /opt/containers/docker_backup_script/backup.sh
 ```
 
-### 4. Notification Configuration
+### 4. **Restoring a Backup**
+
+To restore a backup created by this script:
+
+1. Stop the relevant Docker container:
+   ```bash
+   cd /path/to/your/container
+   docker-compose down
+   ```
+2. Locate your backup archive (e.g., `/srv/backup/container1/backup-YYYYMMDD_HHMMSS.tar.gz`).
+3. Extract the backup to the container directory, replacing existing files:
+   ```bash
+   tar -xvzf /srv/backup/container1/backup-YYYYMMDD_HHMMSS.tar.gz -C /opt/containers/container1 --strip-components=1
+   ```
+4. Restart the container:
+   ```bash
+   docker-compose up -d
+   ```
+
+**Note:** Adjust paths and filenames as needed. Make sure to review the extracted files before starting the container.
+
+### 5. Notification Configuration
 If GOTIFY_MESSAGING is set to true, notifications will be sent to your Gotify server after each container is backed up. These notifications will include details about the backup, including the size of the backup and whether the backup was successful.
 If GOTIFY_MESSAGING is set to false, no notifications will be sent, but the backup process will still proceed as normal.
 
